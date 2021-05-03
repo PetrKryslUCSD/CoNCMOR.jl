@@ -64,11 +64,11 @@ mutable struct CoNCData
 end
 
 """
-    CoNCData(fens::FENodeSet, partitioning::AbstractVector{Int})
+    CoNCData(fens::FENodeSet, partitioning::AbstractVector{T}) where {T}
 
 Constructor  of the Coherent Nodal Cluster model-reduction object.
 """
-function CoNCData(fens::FENodeSet, partitioning::AbstractVector{Int})
+function CoNCData(fens::FENodeSet, partitioning::AbstractVector{T}) where {T}
     partitionnumbers = unique(partitioning)
     numclusters = length(partitionnumbers)
     self = CoNCData()
