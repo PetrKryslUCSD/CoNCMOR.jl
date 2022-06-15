@@ -69,6 +69,15 @@ end
 Constructor  of the Coherent Nodal Cluster model-reduction object.
 """
 function CoNCData(fens::FENodeSet, partitioning::AbstractVector{T}) where {T}
+    return CoNCData(fens.xyz, partitioning)
+end
+
+"""
+    CoNCData(xyz::FFltMat, partitioning::AbstractVector{T}) where {T}
+
+Construct the  Coherent Nodal Cluster model-reduction object.
+"""
+function CoNCData(xyz::FFltMat, partitioning::AbstractVector{T}) where {T}
     partitionnumbers = unique(partitioning)
     numclusters = length(partitionnumbers)
     self = CoNCData()
@@ -77,14 +86,14 @@ function CoNCData(fens::FENodeSet, partitioning::AbstractVector{T}) where {T}
     nodelists = Array{Array{FInt,1},1}(undef, numclusters)
     for j = 1:numclusters
         nodelists[j] = FInt[]
-        sizehint!(nodelists[j], count(fens))
+        sizehint!(nodelists[j], size(xyz, 1))
     end 
     for k = 1:length(partitioning)
         push!(nodelists[partitioning[k]], k)
     end 
     for j = 1:numclusters
         p = partitionnumbers[j]
-        self.clusters[j] =  CoNC(nodelists[p], fens.xyz[nodelists[p], :])
+        self.clusters[j] =  CoNC(nodelists[p], xyz[nodelists[p], :])
     end
     return self
 end
