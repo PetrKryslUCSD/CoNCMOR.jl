@@ -171,6 +171,11 @@ function test()
     C = dualconnectionmatrix(femm1, fens, 2)
     g = Metis.graph(C; check_hermitian=true)
     partitioning = Metis.partition(g, npanelgroups; alg = :KWAY)
+    partitions = unique(partitioning)
+    for j in 1:length(partitions)
+        sfes = subset(fes, findall(v -> v == partitions[j], partitioning))
+        vtkexportmesh("sphere-p$(partitions[j]).vtk", fens, sfes)
+    end
     X = fill(zero(FFlt), count(fes), 3)
     bconn = connasarray(fes)
     for i in 1:size(bconn, 1)
@@ -184,6 +189,146 @@ function test()
     
     @test count(fens) == 169
     @test count(fes) == 147
+end
+test()
+end
+
+
+module mesh_Q4spheren_3
+using Metis
+using FinEtools
+using FinEtools.MeshExportModule
+using CoNCMOR: CoNCData
+using Statistics
+using LinearAlgebra
+using Test
+function test()
+    rex =  2.0; #external radius
+    nr = 4;
+    npanelgroups = 4
+    
+    fens, fes = Q4block(2*rex, rex, nr, nr)
+    fens.xyz = xyz3(fens)
+    
+    vtkexportmesh("block.vtk", fes.conn, fens.xyz,  FinEtools.MeshExportModule.VTK.Q4)
+    
+    femm1  =  FEMMBase(IntegDomain(fes, GaussRule(2, 1)))
+    C = dualconnectionmatrix(femm1, fens, 2)
+    g = Metis.graph(C; check_hermitian=true)
+    partitioning = Metis.partition(g, npanelgroups; alg = :KWAY)
+    partitions = unique(partitioning)
+    for j in 1:length(partitions)
+        sfes = subset(fes, findall(v -> v == partitions[j], partitioning))
+        vtkexportmesh("block-p$(partitions[j]).vtk", fens, sfes)
+    end
+    X = fill(zero(FFlt), count(fes), 3)
+    bconn = connasarray(fes)
+    for i in 1:size(bconn, 1)
+        X[i, :] = @views mean(fens.xyz[bconn[i, :], :], dims=1)
+    end
+    function coordinates(list)
+        krondelta(i, k) = i == k ? 1.0 : 0.0
+        lX = X[list, :]
+        center = mean(lX, dims = 1)
+        for j in 1:size(lX, 1)
+            lX[j, :] -= center[:]
+        end
+        It = fill(0.0, 3, 3)
+        for j in 1:size(lX, 1)
+            r2 = dot(lX[j, :], lX[j, :])
+            for i in 1:3
+                for k in i:3
+                    It[i, k] += krondelta(i, k) * r2 - lX[j, i] * lX[j, k]
+                end
+            end
+        end
+        for i in 1:3
+            for k in 1:i-1
+                It[i, k] = It[k, i]
+            end
+        end
+        @assert It ==  It'
+        # @show center
+        # @show It
+        epsol = eigen(It)
+        normal = epsol.vectors[:, 3]
+        lX
+    end
+
+    mor = CoNCData(coordinates, partitioning)
+    
+    @test count(fens) == (nr+1)^2
+    @test count(fes) == nr^2
+end
+test()
+end
+
+
+module mesh_Q4spheren_4
+using Metis
+using FinEtools
+using FinEtools.MeshExportModule
+using CoNCMOR: CoNCData
+using Statistics
+using LinearAlgebra
+using Test
+function test()
+    rex =  2.0; #external radius
+    nr = 8;
+    npanelgroups = 4
+    
+    fens, fes = Q4spheren(rex, nr)
+    
+    vtkexportmesh("sphere.vtk", fes.conn, fens.xyz,  FinEtools.MeshExportModule.VTK.Q4)
+    
+    femm1  =  FEMMBase(IntegDomain(fes, GaussRule(2, 1)))
+    C = dualconnectionmatrix(femm1, fens, 2)
+    g = Metis.graph(C; check_hermitian=true)
+    @show partitioning = Metis.partition(g, npanelgroups; alg = :KWAY)
+    @show partitions = unique(partitioning)
+    @assert length(partitions) == npanelgroups
+    for j in 1:length(partitions)
+        sfes = subset(fes, findall(v -> v == partitions[j], partitioning))
+        vtkexportmesh("sphere-p$(partitions[j]).vtk", fens, sfes)
+    end
+    X = fill(zero(FFlt), count(fes), 3)
+    bconn = connasarray(fes)
+    for i in 1:size(bconn, 1)
+        X[i, :] = @views mean(fens.xyz[bconn[i, :], :], dims=1)
+    end
+    function coordinates(list)
+        @show list
+        krondelta(i, k) = i == k ? 1.0 : 0.0
+        lX = X[list, :]
+        center = mean(lX, dims = 1)
+        for j in 1:size(lX, 1)
+            lX[j, :] -= center[:]
+        end
+        It = fill(0.0, 3, 3)
+        for j in 1:size(lX, 1)
+            r2 = dot(lX[j, :], lX[j, :])
+            for i in 1:3
+                for k in i:3
+                    It[i, k] += krondelta(i, k) * r2 - lX[j, i] * lX[j, k]
+                end
+            end
+        end
+        for i in 1:3
+            for k in 1:i-1
+                It[i, k] = It[k, i]
+            end
+        end
+        @assert It ==  It'
+        @show center
+        epsol = eigen(It)
+        @show normal = epsol.vectors[:, 3]
+        lX
+    end
+
+    mor = CoNCData(coordinates, partitioning)
+    
+    # @test count(fens) == (nr+1)^2
+    # @test count(fes) == 147
 end
 test()
 end
