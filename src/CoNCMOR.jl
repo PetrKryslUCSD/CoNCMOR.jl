@@ -86,14 +86,35 @@ function CoNCData(xyz::FFltMat, partitioning::AbstractVector{T}) where {T}
     nodelists = Array{Array{FInt,1},1}(undef, numclusters)
     for j = 1:numclusters
         nodelists[j] = FInt[]
-        sizehint!(nodelists[j], size(xyz, 1))
+        sizehint!(nodelists[j], length(self.nodepartitioning))
     end 
-    for k = 1:length(partitioning)
+    for k = 1:length(self.nodepartitioning)
         push!(nodelists[partitioning[k]], k)
     end 
     for j = 1:numclusters
         p = partitionnumbers[j]
         self.clusters[j] =  CoNC(nodelists[p], xyz[nodelists[p], :])
+    end
+    return self
+end
+
+function CoNCData(coordinates::F, partitioning::AbstractVector{T}) where {F, T}
+    partitionnumbers = unique(partitioning)
+    numclusters = length(partitionnumbers)
+    self = CoNCData()
+    self.nodepartitioning = deepcopy(partitioning)
+    self.clusters = Array{CoNC,1}(undef, numclusters)
+    nodelists = Array{Array{FInt,1},1}(undef, numclusters)
+    for j = 1:numclusters
+        nodelists[j] = FInt[]
+        sizehint!(nodelists[j], length(self.nodepartitioning))
+    end 
+    for k = 1:length(self.nodepartitioning)
+        push!(nodelists[partitioning[k]], k)
+    end 
+    for j = 1:numclusters
+        p = partitionnumbers[j]
+        self.clusters[j] =  CoNC(nodelists[p], coordinates(nodelists[p]))
     end
     return self
 end
