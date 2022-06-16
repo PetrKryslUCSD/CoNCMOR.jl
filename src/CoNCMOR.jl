@@ -150,42 +150,42 @@ function assignfestoclusters(self::CoNCData, fes::AbstractFESet)
 end
 
 """
-    transfmatrix(self::CoNCData, ::Type{LegendreBasis}, bnumbers::AbstractRange, fld::NodalField)
+    transfmatrix(self::CoNCData, ::Type{LegendreBasis}, bnumbers::AbstractRange, fld::F) where {F}
 
 Compute the transformation matrix for the Legendre polynomial basis for the
 one-dimensional basis functions given by the range `bnumbers`.
 """
-function transfmatrix(self::CoNCData, ::Type{LegendreBasis}, bnumbers::AbstractRange, fld::NodalField)
+function transfmatrix(self::CoNCData, ::Type{LegendreBasis}, bnumbers::AbstractRange, fld::F) where {F}
     return _transfmatrix(self, bnumbers, fld, _legpol)
 end
 
-function transfmatrix(self::CoNCData, ::Type{LegendreBasis}, bnumber::Int, fld::NodalField)
+function transfmatrix(self::CoNCData, ::Type{LegendreBasis}, bnumber::Int, fld::F) where {F}
     return transfmatrix(self, LegendreBasis, 1:bnumber, fld)
 end 
 
 """
-    transfmatrix(self::CoNCData, ::Type{SineCosineBasis}, degrees::AbstractRange, fld::NodalField)
+    transfmatrix(self::CoNCData, ::Type{SineCosineBasis}, degrees::AbstractRange, fld::F) where {F}
 
 Compute the transformation matrix for the mixed polynomial and cosine basis.
 """
-function transfmatrix(self::CoNCData, ::Type{SineCosineBasis}, bnumbers::AbstractRange, fld::NodalField)
+function transfmatrix(self::CoNCData, ::Type{SineCosineBasis}, bnumbers::AbstractRange, fld::F) where {F}
     return _transfmatrix(self, bnumbers, fld, _cosbas)
 end
 
-function transfmatrix(self::CoNCData, ::Type{SineCosineBasis}, bnumber::Int, fld::NodalField)
+function transfmatrix(self::CoNCData, ::Type{SineCosineBasis}, bnumber::Int, fld::F) where {F}
     return transfmatrix(self, SineCosineBasis, 1:bnumber, fld)
 end 
 
 """
-    transfmatrix(self::CoNCData, ::Type{DivfreeBasis}, degrees::AbstractRange, fld::NodalField)
+    transfmatrix(self::CoNCData, ::Type{DivfreeBasis}, degrees::AbstractRange, fld::F) where {F}
 
 Compute the transformation matrix for the divergence-free polynomial basis.
 """
-function transfmatrix(self::CoNCData, ::Type{DivfreeBasis}, bnumbers::AbstractRange, fld::NodalField)
+function transfmatrix(self::CoNCData, ::Type{DivfreeBasis}, bnumbers::AbstractRange, fld::F) where {F}
     return _transfmatrix(self, bnumbers, fld)
 end
 
-function transfmatrix(self::CoNCData, ::Type{DivfreeBasis}, bnumber::Int, fld::NodalField)
+function transfmatrix(self::CoNCData, ::Type{DivfreeBasis}, bnumber::Int, fld::F) where {F}
     return transfmatrix(self, DivfreeBasis, 1:bnumber, fld)
 end 
 
@@ -440,14 +440,14 @@ end
 
 Compute the transformation matrix for the divergence-free basis.
 """
-function _transfmatrix(self::CoNCData, bnumbers::AbstractRange, fld::NodalField) 
+function _transfmatrix(self::CoNCData, bnumbers::AbstractRange, fld::F) where {F} 
 	@assert minimum(bnumbers) == 1
 	@assert (maximum(bnumbers) > 1) && (maximum(bnumbers) <= 3)
 	ndof = ndofs(fld);
     return _transfmatrix(self, Val(ndof), Val(maximum(bnumbers)), fld)
 end
 
-function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{2}, fld::NodalField)
+function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{2}, fld::F) where {F}
 	ndof = ndofs(fld);
 	@assert ndof == 3
 	maxbn = 2 # Linear basis: Val{2}
@@ -526,7 +526,7 @@ function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{2}, fld::NodalField)
     return makematrix!(assembler);
 end
 
-function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{3}, fld::NodalField)
+function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{3}, fld::F) where {F}
 	ndof = ndofs(fld);
 	@assert ndof == 3
 	maxbn = 3 # Quadratic basis: Val{3}
@@ -674,7 +674,7 @@ end
 end # module
 
 
-# function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{2}, fld::NodalField)
+# function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{2}, fld::F) where {F}
 # 	ndof = ndofs(fld);
 # 	@assert ndof == 3
 # 	maxbn = 2 # Linear basis: Val{2}
