@@ -193,12 +193,12 @@ end
 # PRIVATE FUNCTIONS 
 
 """
-    _transfmatrix(self::CoNCData, bnumbers::AbstractRange, fld::NodalField, f::F) where {F}
+    _transfmatrix(self::CoNCData, bnumbers::AbstractRange, fld::F1, f::F) where {F1, F}
 
 Compute the transformation matrix for the function `f` for the one-dimensional
 basis functions given by the range `bnumbers`.
 """
-function _transfmatrix(self::CoNCData, bnumbers::AbstractRange, fld::NodalField, f::F) where {F}
+function _transfmatrix(self::CoNCData, bnumbers::AbstractRange, fld::F1, f::F) where {F1, F}
 	ndof = ndofs(fld);
     ncol = 0; elem_mat_nrows = 0
     for  mm = 1:length( self.clusters )
