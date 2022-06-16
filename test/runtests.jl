@@ -284,8 +284,8 @@ function test()
     femm1  =  FEMMBase(IntegDomain(fes, GaussRule(2, 1)))
     C = dualconnectionmatrix(femm1, fens, 2)
     g = Metis.graph(C; check_hermitian=true)
-    @show partitioning = Metis.partition(g, npanelgroups; alg = :KWAY)
-    @show partitions = unique(partitioning)
+    partitioning = Metis.partition(g, npanelgroups; alg = :KWAY)
+    partitions = unique(partitioning)
     @assert length(partitions) == npanelgroups
     for j in 1:length(partitions)
         sfes = subset(fes, findall(v -> v == partitions[j], partitioning))
@@ -297,7 +297,6 @@ function test()
         X[i, :] = @views mean(fens.xyz[bconn[i, :], :], dims=1)
     end
     function coordinates(list)
-        @show list
         krondelta(i, k) = i == k ? 1.0 : 0.0
         lX = X[list, :]
         center = mean(lX, dims = 1)
@@ -319,10 +318,16 @@ function test()
             end
         end
         @assert It ==  It'
-        @show center
         epsol = eigen(It)
-        @show normal = epsol.vectors[:, 3]
-        lX
+        normal = epsol.vectors[:, 3]
+        e1 = epsol.vectors[:, 1]
+        e2 = epsol.vectors[:, 2]
+        lxy = fill(0.0, length(list), 2)
+        for j in 1:size(lX, 1)
+            lxy[j, 1] = dot(lX[j, :], e1)
+            lxy[j, 2] = dot(lX[j, :], e2)
+        end
+        return lxy
     end
 
     mor = CoNCData(coordinates, partitioning)
@@ -332,3 +337,99 @@ function test()
 end
 test()
 end
+
+module mesh_Q4spheren_5
+using Metis
+using FinEtools
+using FinEtools.MeshExportModule
+using CoNCMOR: CoNCData, transfmatrix, LegendreBasis
+using Statistics
+using LinearAlgebra
+using Test
+function test()
+    rex = 2.0 #external radius
+    nr = 45
+    npanelgroups = 16
+    nbf1max = 4
+    function pressure(xy)
+        sin(4.0*xy[1]) + sin(2.0*xy[3])
+    end
+
+    fens, fes = Q4spheren(rex, nr)
+
+    # vtkexportmesh("sphere.vtk", fes.conn, fens.xyz,  FinEtools.MeshExportModule.VTK.Q4)
+
+    femm1 = FEMMBase(IntegDomain(fes, GaussRule(2, 1)))
+    C = dualconnectionmatrix(femm1, fens, 2)
+    g = Metis.graph(C; check_hermitian=true)
+    partitioning = Metis.partition(g, npanelgroups; alg=:KWAY)
+    partitions = unique(partitioning)
+    @assert length(partitions) == npanelgroups
+    for j in 1:length(partitions)
+        sfes = subset(fes, findall(v -> v == partitions[j], partitioning))
+        vtkexportmesh("sphere-p$(partitions[j]).vtk", fens, sfes)
+    end
+    X = fill(zero(FFlt), count(fes), 3)
+    bconn = connasarray(fes)
+    for i in 1:size(bconn, 1)
+        X[i, :] = @views mean(fens.xyz[bconn[i, :], :], dims=1)
+    end
+    function coordinates(list)
+        krondelta(i, k) = i == k ? 1.0 : 0.0
+        lX = X[list, :]
+        center = mean(lX, dims=1)
+        for j in 1:size(lX, 1)
+            lX[j, :] -= center[:]
+        end
+        It = fill(0.0, 3, 3)
+        for j in 1:size(lX, 1)
+            r2 = dot(lX[j, :], lX[j, :])
+            for i in 1:3
+                for k in i:3
+                    It[i, k] += krondelta(i, k) * r2 - lX[j, i] * lX[j, k]
+                end
+            end
+        end
+        for i in 1:3
+            for k in 1:i-1
+                It[i, k] = It[k, i]
+            end
+        end
+        @assert It == It'
+        epsol = eigen(It)
+        normal = epsol.vectors[:, 3]
+        e1 = epsol.vectors[:, 1]
+        e2 = epsol.vectors[:, 2]
+        lxy = fill(0.0, length(list), 2)
+        for j in 1:size(lX, 1)
+            lxy[j, 1] = dot(lX[j, :], e1)
+            lxy[j, 2] = dot(lX[j, :], e2)
+        end
+        return lxy
+    end
+
+    mor = CoNCData(coordinates, partitioning)
+    P = ElementalField(zeros(size(X, 1), 1)) # Pressure field
+    numberdofs!(P) #
+    Phi = transfmatrix(mor, LegendreBasis, nbf1max, P)
+
+    for j in 1:size(X, 1)
+        P.values[j] = pressure(X[j, :])
+    end 
+    vtkexportmesh("sphere-P.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
+
+    # qrf = qr(Phi)
+    # a = qrf.R \ (Matrix(qrf.Q)' * P.values)
+    # Pa = Phi * a
+    Pa = Phi * ((Phi' * Phi) \ (Phi' * P.values))
+    vtkexportmesh("sphere-Pa.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
+
+    vtkexportmesh("sphere-DeltaP.vtk", fens, fes; scalars = [("DeltaP", deepcopy(Pa - P.values))])
+
+    # @test count(fens) == (nr+1)^2
+    # @test count(fes) == 147
+end
+test()
+end
+
+nothing
