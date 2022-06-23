@@ -233,7 +233,7 @@ version = "0.13.2"
 
 [[deps.FinEtools]]
 deps = ["DataDrop", "DelimitedFiles", "HDF5", "LinearAlgebra", "LoopVectorization", "Printf", "Random", "Revise", "SparseArrays", "Statistics", "StatsBase", "SymRCM", "Test", "Unicode", "WriteVTK"]
-path = "../FinEtools.jl"
+git-tree-sha1 = "1c48ab6ff9a3bb832b178ddcbd9fe1245236cb0e"
 uuid = "91bb5406-6c9a-523d-811d-0644c4229550"
 version = "5.4.2"
 
@@ -363,9 +363,9 @@ version = "1.3.0"
 
 [[deps.LayoutPointers]]
 deps = ["ArrayInterface", "ArrayInterfaceOffsetArrays", "ArrayInterfaceStaticArrays", "LinearAlgebra", "ManualMemory", "SIMDTypes", "Static"]
-git-tree-sha1 = "a575de5a424a395217930fea6d0934ea853d0158"
+git-tree-sha1 = "b67e749fb35530979839e7b4b606a97105fe4f1c"
 uuid = "10f19ff3-798f-405d-979b-55457f8fc047"
-version = "0.1.9"
+version = "0.1.10"
 
 [[deps.Lazy]]
 deps = ["MacroTools"]
