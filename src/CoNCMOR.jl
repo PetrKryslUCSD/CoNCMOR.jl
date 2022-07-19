@@ -88,7 +88,7 @@ function CoNCData(xyz::FFltMat, partitioning::AbstractVector{T}) where {T}
         nodelists[j] = FInt[]
         sizehint!(nodelists[j], length(self.nodepartitioning))
     end 
-    for k in 1:length(self.nodepartitioning)
+    for k in eachindex(self.nodepartitioning)
         push!(nodelists[partitioning[k]], k)
     end 
     for j in 1:numclusters
@@ -105,14 +105,14 @@ function CoNCData(coordinates::F, partitioning::AbstractVector{T}) where {F, T}
     self.nodepartitioning = deepcopy(partitioning)
     self.clusters = Array{CoNC,1}(undef, numclusters)
     nodelists = Array{Array{FInt,1},1}(undef, numclusters)
-    for j = 1:numclusters
+    for j in 1:numclusters
         nodelists[j] = FInt[]
         sizehint!(nodelists[j], length(self.nodepartitioning))
     end 
-    for k = 1:length(self.nodepartitioning)
+    for k in eachindex(self.nodepartitioning)
         push!(nodelists[partitioning[k]], k)
     end 
-    for j = 1:numclusters
+    for j in 1:numclusters
         p = partitionnumbers[j]
         self.clusters[j] =  CoNC(nodelists[p], coordinates(nodelists[p]))
     end
@@ -132,7 +132,7 @@ nclusters(self::CoNCData) = length(self.clusters)
 Retrieve the number of basis functions per cluster.
 """
 function nfuncspercluster(self::CoNCData)
-    return basisdim(self.clusters[1])
+    return basisdim.(self.clusters)
 end
 
 """
@@ -141,33 +141,7 @@ end
 Retrieve the total number of basis functions in the model reduction object.
 """
 function nbasisfunctions(self::CoNCData)
-    n = 0
-    for ixxxx = 1:length(self.clusters)
-        n = n + basisdim(self.clusters[ixxxx])
-    end
-    return n
-end
-
-"""
-    assignfestoclusters(self::CoNCData, fes::AbstractFESet)
-
-Assign finite elements to node clusters.
-
-A finite element belongs to a cluster if at least one of its nodes belong to this
-cluster.
-"""
-function assignfestoclusters(self::CoNCData, fes::AbstractFESet)
-    feclusters = Vector{Vector{Bool}}(nclusters(self))
-    for g = 1:nclusters(self)
-        feclusters[g] = falses(count(fes))
-        for e = 1:count(fes)
-            n = unique(self.nodepartitioning[fes.conn[e, :]])
-            if g in n
-                feclusters[g][e] = true
-            end
-        end
-    end
-    return feclusters
+    return sum(nfuncspercluster(self))
 end
 
 """
@@ -177,11 +151,23 @@ Compute the transformation matrix for the Legendre polynomial basis for the
 one-dimensional basis functions given by the range `bnumbers`.
 """
 function transfmatrix(self::CoNCData, ::Type{LegendreBasis}, bnumbers::AbstractRange, fld::F) where {F}
-    return _transfmatrix(self, bnumbers, fld, _legpol)
+    bnumberfun = nn -> bnumbers
+    return _transfmatrix(self, bnumberfun, fld, _legpol)
 end
 
+"""
+    transfmatrix(self::CoNCData, ::Type{LegendreBasis}, bnumber::Int, fld::F) where {F}
+
+Compute the transformation matrix for the Legendre polynomial basis for the
+one-dimensional basis functions given by the upper bound on the number of basis
+functions.
+"""
 function transfmatrix(self::CoNCData, ::Type{LegendreBasis}, bnumber::Int, fld::F) where {F}
     return transfmatrix(self, LegendreBasis, 1:bnumber, fld)
+end 
+
+function transfmatrix(self::CoNCData, ::Type{LegendreBasis}, bnumberfun::BF, fld::F) where {BF, F}
+    return _transfmatrix(self, bnumberfun, fld, _legpol)
 end 
 
 """
@@ -213,16 +199,15 @@ end
 # #############################################################################
 # PRIVATE FUNCTIONS 
 
-"""
-    _transfmatrix(self::CoNCData, bnumbers::AbstractRange, fld::F1, f::F) where {F1, F}
 
-Compute the transformation matrix for the function `f` for the one-dimensional
-basis functions given by the range `bnumbers`.
-"""
-function _transfmatrix(self::CoNCData, bnumbers::AbstractRange, fld::F1, f::F) where {F1, F}
+# Compute the transformation matrix for the function `f` for the one-dimensional
+# basis functions given by the range returned by the function `bnumberfun`.
+# `bnumberfun` = function of the number of nodes in the cluster
+function _transfmatrix(self::CoNCData, bnumberfun::BF, fld::F1, f::F) where {BF, F1, F}
 	ndof = ndofs(fld);
     ncol = 0; elem_mat_nrows = 0
-    for  mm = 1:length( self.clusters )
+    for  mm in eachindex( self.clusters )
+        bnumbers = bnumberfun(nnodes(self.clusters[mm]))
         _generatebasis!(self.clusters[mm], bnumbers, f);
         ncol = ncol + ndof*basisdim(self.clusters[mm]);
         elem_mat_nrows = max(elem_mat_nrows, nnodes(self.clusters[mm]));
@@ -230,11 +215,11 @@ function _transfmatrix(self::CoNCData, bnumbers::AbstractRange, fld::F1, f::F) w
     assembler = SysmatAssemblerSparse()
     startassembly!(assembler, elem_mat_nrows, 1, ncol, fld.nfreedofs, ncol)
     c=1;
-    for  g = 1:length(self.clusters)
-        for   dof = 1:ndof
+    for  g in eachindex(self.clusters)
+        for   dof in 1:ndof
             dofnums_r = fld.dofnums[self.clusters[g].nlist, dof]
             dofnums_c = fill(0, 1)
-            for   b = 1:basisdim(self.clusters[g])
+            for   b in 1:basisdim(self.clusters[g])
                 fill!(dofnums_c, c)
                 # assemble unsymmetric matrix
                 assemble!(assembler, reshape(self.clusters[g]._basis[:,b], length(dofnums_r), 1), dofnums_r, dofnums_c);
@@ -480,7 +465,7 @@ function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{2}, fld::F) where {F}
 	# functions is 3 * 10 - 4 = 26. 
 	totalnbf = [0, 11, 26]
 	ncol = 0; elem_mat_nrows = 0
-    for  mm in 1:length(self.clusters)
+    for  mm in eachindex(self.clusters)
     	_makenormalizedisotropic!(self.clusters[mm]);
         ncol = ncol + totalnbf[maxbn];
         elem_mat_nrows = max(elem_mat_nrows, nnodes(self.clusters[mm]));
@@ -488,7 +473,7 @@ function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{2}, fld::F) where {F}
     assembler = SysmatAssemblerSparse()
     startassembly!(assembler, elem_mat_nrows, 1, ncol+2*length(self.clusters), fld.nfreedofs, ncol)
     c=1;
-    for  g in 1:length(self.clusters)
+    for  g in eachindex(self.clusters)
     	dofnums_rx = fld.dofnums[self.clusters[g].nlist, 1]
     	dofnums_ry = fld.dofnums[self.clusters[g].nlist, 2]
     	dofnums_rz = fld.dofnums[self.clusters[g].nlist, 3]
@@ -559,7 +544,7 @@ function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{3}, fld::F) where {F}
 	# functions is 3 * 10 - 4 = 26. 
 	totalnbf = [0, 11, 26]
 	ncol = 0; elem_mat_nrows = 0
-    for  mm in 1:length(self.clusters)
+    for  mm in eachindex(self.clusters)
     	_makenormalizedisotropic!(self.clusters[mm]);
         ncol = ncol + totalnbf[maxbn];
         elem_mat_nrows = max(elem_mat_nrows, nnodes(self.clusters[mm]));
@@ -567,7 +552,7 @@ function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{3}, fld::F) where {F}
     assembler = SysmatAssemblerSparse()
     startassembly!(assembler, elem_mat_nrows, 1, ncol+8*length(self.clusters), fld.nfreedofs, ncol)
     c=1;
-    for  g in 1:length(self.clusters)
+    for  g in eachindex(self.clusters)
     	dofnums_rx = fld.dofnums[self.clusters[g].nlist, 1]
     	dofnums_ry = fld.dofnums[self.clusters[g].nlist, 2]
     	dofnums_rz = fld.dofnums[self.clusters[g].nlist, 3]
@@ -707,7 +692,7 @@ end # module
 # 	# functions is 3 * 10 - 4 = 26. 
 # 	totalnbf = [0, 11, 26]
 # 	ncol = 0; elem_mat_nrows = 0
-#     for  mm in 1:length(self.clusters)
+#     for  mm in eachindex(self.clusters)
 #     	_makenormalizedisotropic!(self.clusters[mm]);
 #         ncol = ncol + totalnbf[maxbn];
 #         elem_mat_nrows = max(elem_mat_nrows, nnodes(self.clusters[mm]));
@@ -715,7 +700,7 @@ end # module
 #     assembler = SysmatAssemblerSparse()
 #     startassembly!(assembler, elem_mat_nrows, 1, ncol+2*length(self.clusters), fld.nfreedofs, ncol)
 #     c=1;
-#     for  g in 1:length(self.clusters)
+#     for  g in eachindex(self.clusters)
 #     	dofnums_rx = fld.dofnums[self.clusters[g].nlist, 1]
 #     	dofnums_ry = fld.dofnums[self.clusters[g].nlist, 2]
 #     	dofnums_rz = fld.dofnums[self.clusters[g].nlist, 3]

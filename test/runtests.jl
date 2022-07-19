@@ -44,7 +44,7 @@ function test()
     u = NodalField(X) 
     numberdofs!(u)
     Phi  = transfmatrix(mor, LegendreBasis, 1, u)
-    @test nfuncspercluster(mor) == 1
+    @test nfuncspercluster(mor) == [1, 1]
     @test nbasisfunctions(mor) == 2
     
     I, J, V = findnz(Phi)
@@ -100,7 +100,7 @@ function test()
     u = NodalField(X) 
     numberdofs!(u)
     Phi  = transfmatrix(mor, LegendreBasis, 2, u)
-    @test nfuncspercluster(mor) == 3
+    @test nfuncspercluster(mor) == [3, 3]
     @test nbasisfunctions(mor) == 2*3
     
     # I, J, V = findnz(Phi)
@@ -462,7 +462,7 @@ function test()
 
     for j in eachindex(epartitions)
         sfes = subset(fes, findall(v -> v == epartitions[j], epartitioning))
-        vtkexportmesh("rblock-ep$(epartitions[j]).vtk", fens, sfes)
+        vtkexportmesh("rblock1-ep$(epartitions[j]).vtk", fens, sfes)
     end
 
     gpartitioning = fill(0, count(fens))
@@ -502,16 +502,16 @@ function test()
     for j in 1:size(X, 1)
         P.values[j] = pressure(X[j, :])
     end 
-    vtkexportmesh("rblock-P.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
+    vtkexportmesh("rblock1-P.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
 
     Pa = Phi * ((Phi' * Phi) \ (Phi' * P.values))
-    vtkexportmesh("rblock-Pa.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
+    vtkexportmesh("rblock1-Pa.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
 
 
     for j in 1:length(gpartitions)
         l = findall(v -> v == gpartitions[j], gpartitioning)
         sfes = FESetP1(reshape(l, length(l), 1))
-        vtkexportmesh("rblock-np$(gpartitions[j]).vtk", fens, sfes)
+        vtkexportmesh("rblock1-np$(gpartitions[j]).vtk", fens, sfes)
     end
 
 
@@ -540,7 +540,6 @@ function test()
     dontpartition = 0
     
     fens, fes = Q4block(A, B, nA, nB)
-    @show count(fens)
 
     # Here we create the domain partitioning based on the finite elements.
     femm1 = FEMMBase(IntegDomain(fes, GaussRule(2, 1)))
@@ -551,7 +550,7 @@ function test()
 
     for j in eachindex(dpartitions)
         sfes = subset(fes, findall(v -> v == dpartitions[j], dpartitioning))
-        vtkexportmesh("rblock-domain$(dpartitions[j]).vtk", fens, sfes)
+        vtkexportmesh("rblock2-domain$(dpartitions[j]).vtk", fens, sfes)
     end
 
     gpartitioning = fill(0, count(fens))
@@ -604,8 +603,6 @@ function test()
     @assert isempty(findall(v -> v == 0, gpartitioning))
     # This is how many partitions of the nodes we will have
     gpartitions = unique(gpartitioning)
-    @show length(gpartitions)
-    length(gpartitioning)
 
     X = fens.xyz
     mor = CoNCData(X, gpartitioning)
@@ -617,16 +614,16 @@ function test()
     for j in 1:size(X, 1)
         P.values[j] = pressure(X[j, :])
     end 
-    vtkexportmesh("rblock-P.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
+    vtkexportmesh("rblock2-P.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
 
     Pa = Phi * ((Phi' * Phi) \ (Phi' * P.values))
-    vtkexportmesh("rblock-Pa.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
+    vtkexportmesh("rblock2-Pa.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
 
 
     for j in 1:length(gpartitions)
         l = findall(v -> v == gpartitions[j], gpartitioning)
         sfes = FESetP1(reshape(l, length(l), 1))
-        vtkexportmesh("rblock-np$(gpartitions[j]).vtk", fens, sfes)
+        vtkexportmesh("rblock2-np$(gpartitions[j]).vtk", fens, sfes)
     end
 
 
@@ -655,7 +652,6 @@ function test()
     dontpartition = 2
     
     fens, fes = Q4block(A, B, nA, nB)
-    @show count(fens)
 
     # Here we create the domain partitioning based on the finite elements.
     femm1 = FEMMBase(IntegDomain(fes, GaussRule(2, 1)))
@@ -666,7 +662,7 @@ function test()
 
     for j in eachindex(dpartitions)
         sfes = subset(fes, findall(v -> v == dpartitions[j], dpartitioning))
-        vtkexportmesh("rblock-domain$(dpartitions[j]).vtk", fens, sfes)
+        vtkexportmesh("rblock3-domain$(dpartitions[j]).vtk", fens, sfes)
     end
 
     gpartitioning = fill(0, count(fens))
@@ -746,10 +742,139 @@ function test()
     for j in 1:size(X, 1)
         P.values[j] = pressure(X[j, :])
     end 
-    vtkexportmesh("rblock-P.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
+    vtkexportmesh("rblock3-P.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
 
     Pa = Phi * ((Phi' * Phi) \ (Phi' * P.values))
-    vtkexportmesh("rblock-Pa.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
+    vtkexportmesh("rblock3-Pa.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
+
+
+    for j in 1:length(gpartitions)
+        l = findall(v -> v == gpartitions[j], gpartitioning)
+        sfes = FESetP1(reshape(l, length(l), 1))
+        vtkexportmesh("rblock3-np$(gpartitions[j]).vtk", fens, sfes)
+    end
+
+
+end
+test()
+end
+
+
+module mesh_Q4multi_4
+using Metis
+using FinEtools
+using FinEtools.MeshExportModule
+using CoNCMOR: CoNCData, transfmatrix, LegendreBasis
+using Statistics
+using LinearAlgebra
+using Test
+
+function pressure(xy)
+    sin(7.5*xy[1]) + sin(5.3*xy[2])
+end
+
+function test()
+    A, B = 2.0, 3.0
+    nA, nB = 51, 73
+    nelgroups = 5
+    psize = 20
+    dontpartition = 2
+    
+    fens, fes = Q4block(A, B, nA, nB)
+    
+    # Here we create the domain partitioning based on the finite elements.
+    femm1 = FEMMBase(IntegDomain(fes, GaussRule(2, 1)))
+    C = dualconnectionmatrix(femm1, fens, 2)
+    g = Metis.graph(C; check_hermitian=true)
+    dpartitioning = Metis.partition(g, nelgroups; alg=:KWAY)
+    dpartitions = unique(dpartitioning)
+
+    for j in eachindex(dpartitions)
+        sfes = subset(fes, findall(v -> v == dpartitions[j], dpartitioning))
+        vtkexportmesh("rblock-domain$(dpartitions[j]).vtk", fens, sfes)
+    end
+
+    gpartitioning = fill(0, count(fens))
+    allpartitions = Int[]
+    cpartoffset = 0
+    for j in eachindex(dpartitions)
+        sfes = subset(fes, findall(v -> v == dpartitions[j], dpartitioning))
+        nl = connectednodes(sfes)
+        if dpartitions[j] == dontpartition
+            ppartitioning = fill(0, count(fens))
+            ppartitions = 1:length(nl)
+            ppartitioning[nl] .= ppartitions
+        else
+            femm1 = FEMMBase(IntegDomain(sfes, GaussRule(2, 1)))
+            C = connectionmatrix(femm1, count(fens))
+            g = Metis.graph(C; check_hermitian=true)
+            np = Int(round(length(nl) / psize))
+            # This partitions all the nodes, not just connected by the elements
+            # above. 
+            ppartitioning = Metis.partition(g, np; alg=:KWAY)
+            # Therefore, we need to relabel the partition numbers. All the
+            # partitions for nodes not connected together by fes will be set to
+            # zero.
+            epts = ppartitioning[nl]
+            ppartitioning = fill(0, count(fens))
+            ppartitioning[nl] = epts
+            # Now we have the the current partitions. They are not necessarily
+            # numbered consecutively. That needs to be fixed now.
+            ppartitions = unique(epts)
+            newppartitions = fill(0, maximum(ppartitions))
+            newppartitions[ppartitions] = 1:length(ppartitions)
+            for k in eachindex(ppartitioning)
+                if ppartitioning[k] > 0
+                    ppartitioning[k] = newppartitions[ppartitioning[k]]
+                end 
+            end 
+            ppartitions = unique(ppartitioning[nl])
+        end 
+        # These are now the partitions of the nodes in the current domain.
+        nap = length(allpartitions) + length(ppartitions)
+        allpartitions = vcat(allpartitions, ppartitions)
+        @assert nap == length(allpartitions)
+        for k in eachindex(nl)
+            gpartitioning[nl[k]] = ppartitioning[nl[k]] + cpartoffset
+        end 
+        cpartoffset += length(ppartitions)
+    end 
+
+    # Now we have the global partitioning of the nodes. Check that all nodes are
+    # included (i.e. the partition is not 0)
+    @assert isempty(findall(v -> v == 0, gpartitioning))
+    # Some partitions may be missing: they are not necessarily in sequential
+    # order. We need to remember them.
+    gpartitions = unique(gpartitioning)
+    newgpartitions = fill(0, maximum(gpartitions))
+    newgpartitions[gpartitions] = 1:length(gpartitions)
+    for k in eachindex(gpartitioning)
+        if gpartitioning[k] > 0
+            gpartitioning[k] = newgpartitions[gpartitioning[k]]
+        end 
+    end 
+    gpartitions = unique(gpartitioning)
+    # @show gpartitioning
+
+    # that now we will start using the nodal partitioning.
+    for k in eachindex(gpartitioning)
+        @assert gpartitioning[k] in gpartitions
+    end 
+
+    X = fens.xyz
+    mor = CoNCData(X, gpartitioning)
+
+    P = NodalField(zeros(size(X, 1), 1)) # Pressure field
+    numberdofs!(P) #
+    Phi = transfmatrix(mor, LegendreBasis, n -> n == 1 ? (1:1) : (1:2), P)
+
+    for j in 1:size(X, 1)
+        P.values[j] = pressure(X[j, :])
+    end 
+    vtkexportmesh("rblock-Y.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
+
+    Pa = Phi * ((Phi' * Phi) \ (Phi' * P.values))
+    vtkexportmesh("rblock-Ya.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
 
 
     for j in 1:length(gpartitions)
@@ -762,5 +887,136 @@ function test()
 end
 test()
 end
+
+
+module mesh_Q4multi_5
+using Metis
+using FinEtools
+using FinEtools.MeshExportModule
+using CoNCMOR: CoNCData, transfmatrix, LegendreBasis
+using Statistics
+using LinearAlgebra
+using Test
+
+function pressure(xy)
+    sin(7.5*xy[1]) + sin(5.3*xy[2])
+end
+
+function test()
+    A, B = 2.0, 3.0
+    nA, nB = 51, 73
+    nelgroups = 5
+    psize = 20
+    dontpartition = [2, 4]
+    
+    fens, fes = Q4block(A, B, nA, nB)
+    
+    # Here we create the domain partitioning based on the finite elements.
+    femm1 = FEMMBase(IntegDomain(fes, GaussRule(2, 1)))
+    C = dualconnectionmatrix(femm1, fens, 2)
+    g = Metis.graph(C; check_hermitian=true)
+    dpartitioning = Metis.partition(g, nelgroups; alg=:KWAY)
+    dpartitions = unique(dpartitioning)
+
+    for j in eachindex(dpartitions)
+        sfes = subset(fes, findall(v -> v == dpartitions[j], dpartitioning))
+        vtkexportmesh("rblock-domain$(dpartitions[j]).vtk", fens, sfes)
+    end
+
+    gpartitioning = fill(0, count(fens))
+    allpartitions = Int[]
+    cpartoffset = 0
+    for j in eachindex(dpartitions)
+        sfes = subset(fes, findall(v -> v == dpartitions[j], dpartitioning))
+        nl = connectednodes(sfes)
+        if dpartitions[j] in dontpartition
+            ppartitioning = fill(0, count(fens))
+            ppartitions = 1:length(nl)
+            ppartitioning[nl] .= ppartitions
+        else
+            femm1 = FEMMBase(IntegDomain(sfes, GaussRule(2, 1)))
+            C = connectionmatrix(femm1, count(fens))
+            g = Metis.graph(C; check_hermitian=true)
+            np = Int(round(length(nl) / psize))
+            # This partitions all the nodes, not just connected by the elements
+            # above. 
+            ppartitioning = Metis.partition(g, np; alg=:KWAY)
+            # Therefore, we need to relabel the partition numbers. All the
+            # partitions for nodes not connected together by fes will be set to
+            # zero.
+            epts = ppartitioning[nl]
+            ppartitioning = fill(0, count(fens))
+            ppartitioning[nl] = epts
+            # Now we have the the current partitions. They are not necessarily
+            # numbered consecutively. That needs to be fixed now.
+            ppartitions = unique(epts)
+            newppartitions = fill(0, maximum(ppartitions))
+            newppartitions[ppartitions] = 1:length(ppartitions)
+            for k in eachindex(ppartitioning)
+                if ppartitioning[k] > 0
+                    ppartitioning[k] = newppartitions[ppartitioning[k]]
+                end 
+            end 
+            ppartitions = unique(ppartitioning[nl])
+        end 
+        # These are now the partitions of the nodes in the current domain.
+        nap = length(allpartitions) + length(ppartitions)
+        allpartitions = vcat(allpartitions, ppartitions)
+        @assert nap == length(allpartitions)
+        for k in eachindex(nl)
+            gpartitioning[nl[k]] = ppartitioning[nl[k]] + cpartoffset
+        end 
+        cpartoffset += length(ppartitions)
+    end 
+
+    # Now we have the global partitioning of the nodes. Check that all nodes are
+    # included (i.e. the partition is not 0)
+    @assert isempty(findall(v -> v == 0, gpartitioning))
+    # Some partitions may be missing: they are not necessarily in sequential
+    # order. We need to remember them.
+    gpartitions = unique(gpartitioning)
+    newgpartitions = fill(0, maximum(gpartitions))
+    newgpartitions[gpartitions] = 1:length(gpartitions)
+    for k in eachindex(gpartitioning)
+        if gpartitioning[k] > 0
+            gpartitioning[k] = newgpartitions[gpartitioning[k]]
+        end 
+    end 
+    gpartitions = unique(gpartitioning)
+    # @show gpartitioning
+
+    # that now we will start using the nodal partitioning.
+    # First a quick check that all notes are assigned to existing partitions.
+    for k in eachindex(gpartitioning)
+        @assert gpartitioning[k] in gpartitions
+    end 
+
+    X = fens.xyz
+    mor = CoNCData(X, gpartitioning)
+
+    P = NodalField(zeros(size(X, 1), 1)) # Pressure field
+    numberdofs!(P) #
+    Phi = transfmatrix(mor, LegendreBasis, n -> n == 1 ? (1:1) : (1:3), P)
+
+    for j in 1:size(X, 1)
+        P.values[j] = pressure(X[j, :])
+    end 
+    vtkexportmesh("rblock-Y.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
+
+    Pa = Phi * ((Phi' * Phi) \ (Phi' * P.values))
+    vtkexportmesh("rblock-Ya.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
+
+
+    for j in 1:length(gpartitions)
+        l = findall(v -> v == gpartitions[j], gpartitioning)
+        sfes = FESetP1(reshape(l, length(l), 1))
+        vtkexportmesh("rblock-np$(gpartitions[j]).vtk", fens, sfes)
+    end
+
+
+end
+test()
+end
+
 
 nothing

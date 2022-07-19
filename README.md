@@ -6,3 +6,8 @@ Based on the paper accepted for publication as NME-Jul-19-0522.R1 - Rapid Free-v
 Abawi, Ahmad, of Heat, Light, and Sound Research, Inc.
 
 This package works with [`FinEtools`](https://github.com/PetrKryslUCSD/FinEtools.jl). If you need the model reduction package to work with [`Elfel`](https://github.com/PetrKryslUCSD/Elfel.jl), please use [`CoNCMOR2`](https://github.com/PetrKryslUCSD/CoNCMOR2.jl).
+
+## News
+
+- 07/18/2022: Incompatible changes to allow clusters to have different numbers
+  of basis functions (v0.3.0).
