@@ -432,4 +432,90 @@ end
 test()
 end
 
+
+module mesh_Q4multi_1
+using Metis
+using FinEtools
+using FinEtools.MeshExportModule
+using CoNCMOR: CoNCData, transfmatrix, LegendreBasis
+using Statistics
+using LinearAlgebra
+using Test
+
+function pressure(xy)
+    sin(4.0*xy[1]) + sin(2.0*xy[2])
+end
+
+function test()
+    A, B = 2.0, 3.0
+    nA, nB = 45, 55
+    nelgroups = 3
+    psize = 100
+    
+    fens, fes = Q4block(A, B, nA, nB)
+
+    femm1 = FEMMBase(IntegDomain(fes, GaussRule(2, 1)))
+    C = dualconnectionmatrix(femm1, fens, 2)
+    g = Metis.graph(C; check_hermitian=true)
+    epartitioning = Metis.partition(g, nelgroups; alg=:KWAY)
+    epartitions = unique(epartitioning)
+
+    for j in eachindex(epartitions)
+        sfes = subset(fes, findall(v -> v == epartitions[j], epartitioning))
+        vtkexportmesh("rblock-ep$(epartitions[j]).vtk", fens, sfes)
+    end
+
+    gpartitioning = fill(0, count(fens))
+    allpartitions = Int[]
+    cpartoffset = 0
+    for j in eachindex(epartitions)
+        # @show "Partition $j"
+        sfes = subset(fes, findall(v -> v == epartitions[j], epartitioning))
+        femm1 = FEMMBase(IntegDomain(sfes, GaussRule(2, 1)))
+        C = connectionmatrix(femm1, count(fens))
+        g = Metis.graph(C; check_hermitian=true)
+        nl = connectednodes(sfes)
+        np = Int(round(length(nl) / psize))
+        ppartitioning = Metis.partition(g, np; alg=:KWAY)
+        ppartitions = unique(ppartitioning[nl])
+        nap = length(allpartitions) + length(ppartitions)
+        allpartitions = vcat(allpartitions, ppartitions)
+        @assert nap == length(allpartitions)
+        for k in eachindex(nl)
+            gpartitioning[nl[k]] = ppartitioning[nl[k]] + cpartoffset
+        end 
+        gpartitions = unique(gpartitioning)
+        cpartoffset += length(ppartitions)
+    end 
+    @assert isempty(findall(v -> v == 0, gpartitioning))
+    gpartitions = unique(gpartitioning)
+
+    @test length(unique(gpartitioning)) == 12
+
+    X = fens.xyz
+    mor = CoNCData(X, gpartitioning)
+    P = NodalField(zeros(size(X, 1), 1)) # Pressure field
+    numberdofs!(P) #
+    Phi = transfmatrix(mor, LegendreBasis, 5, P)
+
+    for j in 1:size(X, 1)
+        P.values[j] = pressure(X[j, :])
+    end 
+    vtkexportmesh("rblock-P.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
+
+    Pa = Phi * ((Phi' * Phi) \ (Phi' * P.values))
+    vtkexportmesh("rblock-Pa.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
+
+
+    for j in 1:length(gpartitions)
+        l = findall(v -> v == gpartitions[j], gpartitioning)
+        sfes = FESetP1(reshape(l, length(l), 1))
+        vtkexportmesh("rblock-np$(gpartitions[j]).vtk", fens, sfes)
+    end
+
+
+end
+test()
+end
+
 nothing
