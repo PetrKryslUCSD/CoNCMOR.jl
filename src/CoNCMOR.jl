@@ -37,7 +37,7 @@ end
 """
     basisdim(self::CoNC)
 
-What is the dimension of the base function set in the cluster?
+What is the dimension of the set of the basis function in the cluster?
 
 In other words, how many linearly independent basis functions are there?
 """
@@ -84,14 +84,14 @@ function CoNCData(xyz::FFltMat, partitioning::AbstractVector{T}) where {T}
     self.nodepartitioning = deepcopy(partitioning)
     self.clusters = Array{CoNC,1}(undef, numclusters)
     nodelists = Array{Array{FInt,1},1}(undef, numclusters)
-    for j = 1:numclusters
+    for j in 1:numclusters
         nodelists[j] = FInt[]
         sizehint!(nodelists[j], length(self.nodepartitioning))
     end 
-    for k = 1:length(self.nodepartitioning)
+    for k in 1:length(self.nodepartitioning)
         push!(nodelists[partitioning[k]], k)
     end 
-    for j = 1:numclusters
+    for j in 1:numclusters
         p = partitionnumbers[j]
         self.clusters[j] =  CoNC(nodelists[p], xyz[nodelists[p], :])
     end
@@ -372,7 +372,6 @@ end
 Generate basis described by the function `f` for the one-dimensional basis
 functions given by the range `bnumbers`.
 """
-
 function _generatebasis!(self::CoNC, bnumbers::AbstractRange, f::F) where {F}
     self = _makenormalized!(self);
     sdim = size(self.xyz,2)
