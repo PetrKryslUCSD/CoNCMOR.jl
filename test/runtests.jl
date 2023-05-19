@@ -896,6 +896,8 @@ using FinEtools.MeshExportModule
 using CoNCMOR: CoNCData, transfmatrix, LegendreBasis
 using Statistics
 using LinearAlgebra
+using SparseArrays
+using PlotlyLight
 using Test
 
 function pressure(xy)
@@ -906,11 +908,11 @@ function test()
     A, B = 2.0, 3.0
     nA, nB = 51, 73
     nelgroups = 5
-    psize = 20
+    psize = 50
     dontpartition = [2, 4]
-    
+
     fens, fes = Q4block(A, B, nA, nB)
-    
+
     # Here we create the domain partitioning based on the finite elements.
     femm1 = FEMMBase(IntegDomain(fes, GaussRule(2, 1)))
     C = dualconnectionmatrix(femm1, fens, 2)
@@ -939,7 +941,7 @@ function test()
             g = Metis.graph(C; check_hermitian=true)
             np = Int(round(length(nl) / psize))
             # This partitions all the nodes, not just connected by the elements
-            # above. 
+            # above.
             ppartitioning = Metis.partition(g, np; alg=:KWAY)
             # Therefore, we need to relabel the partition numbers. All the
             # partitions for nodes not connected together by fes will be set to
@@ -955,41 +957,40 @@ function test()
             for k in eachindex(ppartitioning)
                 if ppartitioning[k] > 0
                     ppartitioning[k] = newppartitions[ppartitioning[k]]
-                end 
-            end 
+                end
+            end
             ppartitions = unique(ppartitioning[nl])
-        end 
+        end
         # These are now the partitions of the nodes in the current domain.
         nap = length(allpartitions) + length(ppartitions)
         allpartitions = vcat(allpartitions, ppartitions)
         @assert nap == length(allpartitions)
         for k in eachindex(nl)
             gpartitioning[nl[k]] = ppartitioning[nl[k]] + cpartoffset
-        end 
+        end
         cpartoffset += length(ppartitions)
-    end 
+    end
 
     # Now we have the global partitioning of the nodes. Check that all nodes are
     # included (i.e. the partition is not 0)
     @assert isempty(findall(v -> v == 0, gpartitioning))
     # Some partitions may be missing: they are not necessarily in sequential
-    # order. We need to remember them.
+    # order. We need to renumber them.
     gpartitions = unique(gpartitioning)
     newgpartitions = fill(0, maximum(gpartitions))
     newgpartitions[gpartitions] = 1:length(gpartitions)
     for k in eachindex(gpartitioning)
         if gpartitioning[k] > 0
             gpartitioning[k] = newgpartitions[gpartitioning[k]]
-        end 
-    end 
+        end
+    end
     gpartitions = unique(gpartitioning)
     # @show gpartitioning
 
     # that now we will start using the nodal partitioning.
-    # First a quick check that all notes are assigned to existing partitions.
     for k in eachindex(gpartitioning)
         @assert gpartitioning[k] in gpartitions
-    end 
+    end
 
     X = fens.xyz
     mor = CoNCData(X, gpartitioning)
@@ -998,25 +999,36 @@ function test()
     numberdofs!(P) #
     Phi = transfmatrix(mor, LegendreBasis, n -> n == 1 ? (1:1) : (1:3), P)
 
+    I, J, V = findnz(Phi)
+    p = PlotlyLight.Plot()
+    p(x = J, y = I, mode="markers")
+    # p.layout.title.text = "Matrix G"
+    p.layout.yaxis.title = "Row"
+    p.layout.yaxis.range = [size(Phi, 1)+1, 0]
+    p.layout.xaxis.title = "Column"
+    p.layout.xaxis.range = [0, size(Phi, 2)+1]
+    p.layout.xaxis.side = "top"
+    p.layout.margin.pad = 10
+    display(p)
+
     for j in 1:size(X, 1)
         P.values[j] = pressure(X[j, :])
-    end 
+    end
     vtkexportmesh("rblock-Y.vtk", fens, fes; scalars = [("P", deepcopy(P.values))])
 
     Pa = Phi * ((Phi' * Phi) \ (Phi' * P.values))
     vtkexportmesh("rblock-Ya.vtk", fens, fes; scalars = [("Pa", deepcopy(Pa))])
 
 
-    for j in 1:length(gpartitions)
-        l = findall(v -> v == gpartitions[j], gpartitioning)
-        sfes = FESetP1(reshape(l, length(l), 1))
-        vtkexportmesh("rblock-np$(gpartitions[j]).vtk", fens, sfes)
-    end
+    # for j in 1:length(gpartitions)
+    #     l = findall(v -> v == gpartitions[j], gpartitioning)
+    #     sfes = FESetP1(reshape(l, length(l), 1))
+    #     vtkexportmesh("rblock-np$(gpartitions[j]).vtk", fens, sfes)
+    # end
 
 
 end
 test()
 end
-
 
 nothing
