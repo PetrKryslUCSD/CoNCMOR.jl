@@ -9,5 +9,6 @@ This package works with [`FinEtools`](https://github.com/PetrKryslUCSD/FinEtools
 
 ## News
 
+- 06/21/2023: Update for   FinEtools 7.0. 
 - 07/18/2022: Incompatible changes to allow clusters to have different numbers
   of basis functions (v0.3.0).

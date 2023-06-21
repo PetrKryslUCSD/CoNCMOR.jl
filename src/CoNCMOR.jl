@@ -213,7 +213,7 @@ function _transfmatrix(self::CoNCData, bnumberfun::BF, fld::F1, f::F) where {BF,
         elem_mat_nrows = max(elem_mat_nrows, nnodes(self.clusters[mm]));
     end
     assembler = SysmatAssemblerSparse()
-    startassembly!(assembler, elem_mat_nrows, 1, ncol, fld.nfreedofs, ncol)
+    startassembly!(assembler, elem_mat_nrows * ncol, nfreedofs(fld), ncol)
     c=1;
     for  g in eachindex(self.clusters)
         for   dof in 1:ndof
