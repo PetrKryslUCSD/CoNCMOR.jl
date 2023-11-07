@@ -250,7 +250,7 @@ function _makenormalized!(self::CoNC)
 end
 
 """
-    _makenormalized!(self::CoNC)
+    function _makenormalizedisotropic!(self::CoNC)
 
 Compute the ISOTROPIC normalized coordinates.
 """
