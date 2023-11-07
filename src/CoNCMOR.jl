@@ -9,6 +9,7 @@ using SparseArrays
 using LinearAlgebra
 import Base.copyto!
 using FinEtools
+using FinEtools.FTypesModule: FInt, FFlt, FCplxFlt, FFltVec, FIntVec, FFltMat, FIntMat, FMat, FVec, FDataDict
 using Statistics: mean
 
 struct LegendreBasis end
