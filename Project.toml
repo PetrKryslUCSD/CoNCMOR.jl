@@ -1,7 +1,7 @@
 name = "CoNCMOR"
 uuid = "3a989f29-cff0-4f1c-87be-5dcdd41bd240"
 authors = ["Petr Krysl <pkrysl@ucsd.edu>"]
-version = "0.4.0"
+version = "0.4.1"
 
 [deps]
 FinEtools = "91bb5406-6c9a-523d-811d-0644c4229550"
