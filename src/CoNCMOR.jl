@@ -214,7 +214,7 @@ function _transfmatrix(self::CoNCData, bnumberfun::BF, fld::F1, f::F) where {BF,
         elem_mat_nrows = max(elem_mat_nrows, nnodes(self.clusters[mm]));
     end
     assembler = SysmatAssemblerSparse()
-    startassembly!(assembler, elem_mat_nrows * ncol, nfreedofs(fld), ncol)
+    startassembly!(assembler, elem_mat_nrows, 1, ncol, nalldofs(fld), ncol)
     c=1;
     for  g in eachindex(self.clusters)
         for   dof in 1:ndof
@@ -472,7 +472,7 @@ function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{2}, fld::F) where {F}
         elem_mat_nrows = max(elem_mat_nrows, nnodes(self.clusters[mm]));
     end
     assembler = SysmatAssemblerSparse()
-    startassembly!(assembler, elem_mat_nrows, 1, ncol+2*length(self.clusters), fld.nfreedofs, ncol)
+    startassembly!(assembler, elem_mat_nrows, 1, ncol+2*length(self.clusters), nalldofs(fld), ncol)
     c=1;
     for  g in eachindex(self.clusters)
     	dofnums_rx = fld.dofnums[self.clusters[g].nlist, 1]
@@ -551,7 +551,7 @@ function _transfmatrix(self::CoNCData, ::Val{3}, ::Val{3}, fld::F) where {F}
         elem_mat_nrows = max(elem_mat_nrows, nnodes(self.clusters[mm]));
     end
     assembler = SysmatAssemblerSparse()
-    startassembly!(assembler, elem_mat_nrows, 1, ncol+8*length(self.clusters), fld.nfreedofs, ncol)
+    startassembly!(assembler, elem_mat_nrows, 1, ncol+8*length(self.clusters), nalldofs(fld), ncol)
     c=1;
     for  g in eachindex(self.clusters)
     	dofnums_rx = fld.dofnums[self.clusters[g].nlist, 1]

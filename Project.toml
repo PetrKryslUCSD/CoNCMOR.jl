@@ -1,7 +1,7 @@
 name = "CoNCMOR"
 uuid = "3a989f29-cff0-4f1c-87be-5dcdd41bd240"
 authors = ["Petr Krysl <pkrysl@ucsd.edu>"]
-version = "0.4.1"
+version = "0.5.0"
 
 [deps]
 FinEtools = "91bb5406-6c9a-523d-811d-0644c4229550"
@@ -12,10 +12,10 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
-FinEtools = "^7"
-StaticArrays = "^1.5"
-Statistics = "^1.9"
-LinearAlgebra = "^1.9"
-SparseArrays = "^1.9"
-Test = "^1.9"
-julia = "^1.9"
+FinEtools = "^8"
+LinearAlgebra = "^1.10"
+SparseArrays = "^1.10"
+StaticArrays = "^1.9"
+Statistics = "^1.10"
+Test = "^1.10"
+julia = "^1.10"
