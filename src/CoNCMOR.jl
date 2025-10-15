@@ -242,7 +242,7 @@ function _makenormalized!(self::CoNC)
 	    sdim = size(self.xyz,2);
 	    for   j=1:sdim
 	        rang = box[(j-1)*2+1:(j-1)*2+2];
-			if diff(rang) == 0.0
+			if diff(rang)[1] == 0.0
 				self._normalizedxyz[:,j] .= 0.0
 			else
 	        	self._normalizedxyz[:,j] = broadcast(-, self.xyz[:,j], mean(rang))*2/diff(rang)[1];
